@@ -1,53 +1,39 @@
 #!/usr/bin/node
+// script that prints all characters of a Star Wars movie.
 
 const request = require('request');
-
+const util = require('util');
 const movieId = process.argv[2];
-const filmEndPoint = 'https://swapi-api.hbtn.io/api/films/' + movieId;
-let people = [];
-const names = [];
+const url = `https://swapi-api.alx-tools.com/api/films/${movieId}`;
 
-const requestCharacters = async () => {
-  await new Promise(resolve => request(filmEndPoint, (err, res, body) => {
-    if (err || res.statusCode !== 200) {
-      console.error('Error: ', err, '| StatusCode: ', res.statusCode);
-    } else {
-      const jsonBody = JSON.parse(body);
-      people = jsonBody.characters;
-      resolve();
-    }
-  }));
-};
+// Convert the callback-based request method to a Promise-based method
+const requestPromise = util.promisify(request);
 
-const requestNames = async () => {
-  if (people.length > 0) {
-    for (const p of people) {
-      await new Promise(resolve => request(p, (err, res, body) => {
-        if (err || res.statusCode !== 200) {
-          console.error('Error: ', err, '| StatusCode: ', res.statusCode);
+(async function () {
+  try {
+    const { statusCode, body } = await requestPromise(url);
+
+    if (statusCode === 200) {
+      const data = JSON.parse(body);
+      const characterUrls = data.characters;
+      const ids = characterUrls.map(url => parseInt(url.split('/').slice(-2, -1)[0]));
+      const sortedIds = ids.sort((a, b) => a - b);
+
+      for (const id of sortedIds) {
+        const { statusCode, body } = await requestPromise(`https://swapi-api.alx-tools.com/api/people/${id}/`);
+
+        if (statusCode === 200) {
+          const data = JSON.parse(body);
+          const charactername = data.name;
+          console.log(charactername);
         } else {
-          const jsonBody = JSON.parse(body);
-          names.push(jsonBody.name);
-          resolve();
+          console.log(`Error: Received status code ${statusCode}`);
         }
-      }));
-    }
-  } else {
-    console.error('Error: Got no Characters for some reason');
-  }
-};
-
-const getCharNames = async () => {
-  await requestCharacters();
-  await requestNames();
-
-  for (const n of names) {
-    if (n === names[names.length - 1]) {
-      process.stdout.write(n);
+      }
     } else {
-      process.stdout.write(n + '\n');
+      console.log(`Error: Received status code ${statusCode}`);
     }
+  } catch (error) {
+    console.log(`Error: ${error}`);
   }
-};
-
-getCharNames();
+})();

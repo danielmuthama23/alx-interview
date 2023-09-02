@@ -1,37 +1,40 @@
 #!/usr/bin/python3
-'''a script that reads stdin line by line and computes metrics'''
-
-
+""" script that reads stdin line by line and computes metrics """
 import sys
 
-cache = {'200': 0, '301': 0, '400': 0, '401': 0,
+codes = {'200': 0, '301': 0, '400': 0, '401': 0,
          '403': 0, '404': 0, '405': 0, '500': 0}
-total_size = 0
-counter = 0
+file_size = 0
+count = 0
+
+
+def print_info():
+    """print stdin input computed statistics
+    <Helper function>
+    """
+    print("File size: {}".format(file_size))
+    for key, val in sorted(codes.items()):
+        if val > 0:
+            print("{}: {}".format(key, val))
+
 
 try:
-    for line in sys.stdin:
-        line_list = line.split(" ")
-        if len(line_list) > 4:
-            code = line_list[-2]
-            size = int(line_list[-1])
-            if code in cache.keys():
-                cache[code] += 1
-            total_size += size
-            counter += 1
+    while sys.stdin:
+        input_line = sys.stdin.readline()
+        section = input_line.split()
 
-        if counter == 10:
-            counter = 0
-            print('File size: {}'.format(total_size))
-            for key, value in sorted(cache.items()):
-                if value != 0:
-                    print('{}: {}'.format(key, value))
+        status_code = section[-2]
+        size = section[-1]
+        count += 1
 
-except Exception as err:
-    pass
+        if status_code:
+            if status_code in codes.keys():
+                codes[status_code] += 1
+            file_size += int(size)
 
-finally:
-    print('File size: {}'.format(total_size))
-    for key, value in sorted(cache.items()):
-        if value != 0:
-            print('{}: {}'.format(key, value))
+        if count % 10 == 0:
+            print_info()
+except KeyboardInterrupt:
+    print_info()
+    raise
+print_info()
